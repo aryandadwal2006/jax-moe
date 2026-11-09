@@ -26,6 +26,8 @@ def fused_expert_mlp(
     expert_up: jax.Array,
     expert_down: jax.Array,
     expert_ids: jax.Array,
+    block_h: int = 32,
+    block_f: int = 64,
 ) -> jax.Array:
     if x.ndim != 2 or expert_ids.ndim != 1:
         raise ValueError("x must be rank 2 and expert_ids must be rank 1")
@@ -37,16 +39,23 @@ def fused_expert_mlp(
         raise ValueError("expert_down must have shape [experts, ffn_size, hidden_size]")
     if expert_ids.shape[0] != tokens:
         raise ValueError("expert_ids must contain one id per token")
+    if block_h < 1 or block_f < 1 or hidden_size % block_h or ffn_size % block_f:
+        raise ValueError("projection dimensions must be divisible by block_h and block_f")
 
     def kernel(x_ref, up_ref, down_ref, ids_ref, output_ref):
         token = pl.program_id(0)
         expert = ids_ref[token]
-        x_row = x_ref[token, :].astype(jnp.float32)
-        up = up_ref[expert, :, :].astype(jnp.float32)
-        intermediate = jnp.sum(x_row[:, None] * up, axis=0)
+        intermediate = jnp.zeros((ffn_size,), dtype=jnp.float32)
+        for start in range(0, hidden_size, block_h):
+            x_block = x_ref[token, start:start + block_h].astype(jnp.float32)
+            up_block = up_ref[expert, start:start + block_h, :].astype(jnp.float32)
+            intermediate = intermediate + jnp.sum(x_block[:, None] * up_block, axis=0)
         intermediate = jax.nn.silu(intermediate)
-        down = down_ref[expert, :, :].astype(jnp.float32)
-        result = jnp.sum(intermediate[:, None] * down, axis=0)
+        result = jnp.zeros((hidden_size,), dtype=jnp.float32)
+        for start in range(0, ffn_size, block_f):
+            ffn_block = intermediate[start:start + block_f]
+            down_block = down_ref[expert, start:start + block_f, :].astype(jnp.float32)
+            result = result + jnp.sum(ffn_block[:, None] * down_block, axis=0)
         output_ref[token, :] = result.astype(x_ref.dtype)
 
     return pl.pallas_call(
