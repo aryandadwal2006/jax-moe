@@ -2,12 +2,12 @@
 
 A Flax decoder-only Transformer for multi-digit addition with dense and top-1 MoE feed-forward layers.
 
-- `data.py` generates addition sequences from a restricted digit/operator vocabulary.
-- `model.py` implements causal attention, dense MLPs, and token-routed experts.
-- `train.py` trains either architecture with Optax and masked next-token loss.
-- `scaling.py` exports parameter and active-compute grids using a Chinchilla-style `6NT` estimate.
-- `kernels.py` fuses expert up-projection, SiLU, and down-projection in a Pallas kernel.
-- `benchmark.py` compares the Pallas kernel with a `jax.lax.ragged_dot` baseline.
+- `jax_moe/data.py` generates addition sequences from a restricted digit/operator vocabulary.
+- `jax_moe/model.py` implements causal attention, dense MLPs, and token-routed experts.
+- `jax_moe/train.py` trains either architecture with Optax and masked next-token loss.
+- `jax_moe/scaling.py` exports parameter and active-compute grids using a Chinchilla-style `6NT` estimate.
+- `jax_moe/kernels.py` fuses expert up-projection, SiLU, and down-projection in a Pallas kernel.
+- `jax_moe/benchmark.py` compares the Pallas kernel with a `jax.lax.ragged_dot` baseline.
 
 Install JAX for the selected CPU, CUDA, or TPU runtime, then install `requirements.txt`.
 
