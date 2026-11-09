@@ -6,8 +6,8 @@ A Flax decoder-only Transformer for multi-digit addition with dense and top-1 Mo
 - `model.py` implements causal attention, dense MLPs, and token-routed experts.
 - `train.py` trains either architecture with Optax and masked next-token loss.
 - `scaling.py` exports parameter and active-compute grids using a Chinchilla-style `6NT` estimate.
-- `kernels.py` provides a Pallas fused expert up-projection, SiLU, and down-projection kernel.
-- `benchmark.py` compares the fused kernel against the gathered-expert JAX reference.
+- `kernels.py` fuses expert up-projection, SiLU, and down-projection in a Pallas kernel.
+- `benchmark.py` compares the Pallas kernel with a `jax.lax.ragged_dot` baseline.
 
 Install JAX for the selected CPU, CUDA, or TPU runtime, then install `requirements.txt`.
 
