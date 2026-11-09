@@ -3,7 +3,7 @@ import time
 import jax
 import jax.numpy as jnp
 
-from jax_moe.kernels import fused_expert_mlp, selected_expert_mlp
+from jax_moe.kernels import fused_expert_mlp, ragged_expert_mlp
 
 
 def _measure(function, repeats: int) -> float:
@@ -22,7 +22,7 @@ def benchmark_fused(tokens: int = 128, hidden_size: int = 128, ffn_size: int = 5
     up = jax.random.normal(key_up, (experts, hidden_size, ffn_size), dtype=jnp.float32)
     down = jax.random.normal(key_down, (experts, ffn_size, hidden_size), dtype=jnp.float32)
     expert_ids = jax.random.randint(key_ids, (tokens,), 0, experts)
-    reference = lambda: selected_expert_mlp(x, up, down, expert_ids)
+    reference = lambda: ragged_expert_mlp(x, up, down, expert_ids)
     fused = lambda: fused_expert_mlp(x, up, down, expert_ids)
     reference_time = _measure(reference, repeats)
     fused_time = _measure(fused, repeats)
